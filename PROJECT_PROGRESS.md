@@ -29,14 +29,16 @@ Last updated: 2026-06-05 (post–Vercel migration)
 
 | Item | Value |
 |------|--------|
-| Vercel user | `worknavleensingh-8981` (`work.navleensingh@gmail.com`) |
-| Vercel team | `navleen-s-projects` |
+| Vercel user | `workpuneetkumar-1916` (`work.puneetkumar@gmail.com`) |
+| Vercel team | `puneets-projects-a43040fa` (Puneet's projects) |
 | Project | `zyoris-mail` |
-| Project ID | `prj_9Kgnpwy4BlVGxZaOtkUEoMxxNpxp` |
-| Production URL | https://zyoris-mail.vercel.app |
-| Preview URL pattern | `https://zyoris-mail-<hash>-navleen-s-projects.vercel.app` |
+| Project ID | `prj_hXgaUH5BManGZZFvEq4jHMYAR95B` |
+| Production URL | https://zyoris-mail-nine.vercel.app |
+| Preview URL pattern | `https://zyoris-mail-<hash>-puneets-projects-a43040fa.vercel.app` |
 | Target custom domain | https://mail.zyoris.com (DNS **not** configured) |
-| Inspector | https://vercel.com/navleen-s-projects/zyoris-mail |
+| Dashboard | https://vercel.com/puneets-projects-a43040fa/zyoris-mail |
+
+**Previous (wrong) account:** `navleen-s-projects` / `worknavleensingh-8981` — logged out; do not use.
 
 ## Manual steps for owner
 
