@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { User, Organization, Domain, Email, ActivityLog, Mailbox } from "@/models";
+import { requireRole } from "@/lib/session";
 
 export async function GET() {
+  await requireRole(["SUPER_ADMIN"]);
   await connectToDatabase();
   const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const [users, organizations, domains, emails, activities, mailboxes, activeMailboxes, mailboxGrowth7d, storageUsedBytes] =

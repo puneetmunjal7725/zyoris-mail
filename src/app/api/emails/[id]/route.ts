@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { withApi } from "@/lib/api-error";
-import { Email } from "@/models";
+import { Attachment, Email } from "@/models";
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   return withApi(async () => {
@@ -18,6 +19,20 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     const thread = email.threadId
       ? await Email.find({ threadId: email.threadId, organizationId: session.user.organizationId }).sort({ createdAt: 1 }).lean()
       : [email];
-    return NextResponse.json({ email, thread });
+    const attachmentIds = [
+      ...(email.attachments || []),
+      ...thread.flatMap((m) => m.attachments || []),
+    ].map(String);
+    const uniqueIds = [...new Set(attachmentIds)].filter((id) => mongoose.Types.ObjectId.isValid(id));
+    const attachments =
+      uniqueIds.length > 0
+        ? await Attachment.find({
+            _id: { $in: uniqueIds.map((id) => new mongoose.Types.ObjectId(id)) },
+            organizationId: session.user.organizationId,
+          })
+            .select("filename mimeType size")
+            .lean()
+        : [];
+    return NextResponse.json({ email, thread, attachments });
   });
 }

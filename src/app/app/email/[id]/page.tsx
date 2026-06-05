@@ -18,7 +18,10 @@ type EmailDoc = {
   bodyText: string;
   mailbox: string;
   createdAt: string;
+  attachments?: string[];
 };
+
+type AttachmentMeta = { _id: string; filename: string; mimeType: string; size: number };
 
 export default function EmailDetailPage() {
   const params = useParams<{ id: string }>();
@@ -29,12 +32,14 @@ export default function EmailDetailPage() {
   const [replyHtml, setReplyHtml] = useState("");
   const [replyTo, setReplyTo] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<AttachmentMeta[]>([]);
 
   useEffect(() => {
-    clientApi<{ email: EmailDoc; thread: EmailDoc[] }>(`/api/emails/${id}`)
+    clientApi<{ email: EmailDoc; thread: EmailDoc[]; attachments?: AttachmentMeta[] }>(`/api/emails/${id}`)
       .then((data) => {
         setEmail(data.email);
         setThread(data.thread);
+        setAttachments(data.attachments || []);
         setReplyTo(data.email.from);
         setReplyHtml(`<p><br></p><p>---</p><p>${data.email.bodyHtml}</p>`);
       })
@@ -106,6 +111,29 @@ export default function EmailDetailPage() {
         <div className="mt-2 text-sm text-[var(--muted)]">
           From: {email.from} • To: {email.to.join(", ")} • Mailbox: {email.mailbox}
         </div>
+        {attachments.length > 0 && (
+          <div className="mt-4 border-t border-[var(--border)] pt-4">
+            <h3 className="text-sm font-semibold">Attachments</h3>
+            <ul className="mt-2 space-y-2">
+              {attachments.map((a) => (
+                <li key={a._id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm">
+                  <span>
+                    {a.filename} <span className="text-[var(--muted)]">({Math.round(a.size / 1024)} KB)</span>
+                  </span>
+                  <Button
+                    className="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]"
+                    onClick={async () => {
+                      const data = await clientApi<{ url: string }>(`/api/attachments/${a._id}`);
+                      window.open(data.url, "_blank", "noopener,noreferrer");
+                    }}
+                  >
+                    {a.mimeType.startsWith("image/") ? "Preview" : "Download"}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="mt-4 prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: email.bodyHtml }} />
       </Card>
 
