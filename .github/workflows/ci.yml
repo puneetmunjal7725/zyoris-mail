@@ -1,0 +1,29 @@
+name: CI
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+        env:
+          NEXTAUTH_SECRET: ci-test-secret-minimum-32-chars
+          MONGODB_URI: mongodb://127.0.0.1:27017/zyoris-mail-ci
+          REDIS_URL: redis://127.0.0.1:6379
+          STORAGE_ENDPOINT: https://example.com
+          STORAGE_BUCKET: zyoris-mail
+          STORAGE_ACCESS_KEY: test
+          STORAGE_SECRET_KEY: test
+          EMAIL_PROVIDER: RESEND
+          FROM_EMAIL: test@example.com
