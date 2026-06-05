@@ -1,86 +1,63 @@
 # Zyoris Mail — Project Progress
 
-Last updated: 2026-06-05
+Last updated: 2026-06-05 (post–Vercel migration)
 
 ## Completed
 
-### Core platform
-- [x] Multi-tenant MongoDB models (users, orgs, domains, mailboxes, aliases, emails, threads, attachments, billing, activity logs)
-- [x] REST APIs: auth, orgs, users, invitations, domains (real DNS verify), mailboxes, aliases, email folders, send, inbound (Resend/Mailgun), attachments, scheduled mail, billing, admin
-- [x] RBAC (SUPER_ADMIN, ORG_ADMIN, USER)
-- [x] Docker + GitHub Actions CI (lint, typecheck, test, build)
+- [x] Full application codebase (auth, mail client, org/admin, APIs, security)
+- [x] Tests: 10/10 Vitest; build passes
+- [x] **Vercel migration** to fresh project under CLI-authenticated account
+- [x] Old project removed (`prj_bRcrQ1RlxGN7eDz1rOY7Y137DoGQ` → API 404)
+- [x] New project `prj_9Kgnpwy4BlVGxZaOtkUEoMxxNpxp` deployed
+- [x] `zyoris-mail.vercel.app` alias → new deployment
+- [x] Production smoke: health, pages, invalid signup 400
+- [x] Migration/deploy scripts in `scripts/`
+- [x] Checklists: `DEPLOYMENT_CHECKLIST.md`, `INFRASTRUCTURE_CHECKLIST.md`, `PRODUCTION_VALIDATION_REPORT.md`
 
-### Security
-- [x] Removed fake `/api/domains/verify` endpoint
-- [x] Webhook signature verification (Resend, Mailgun)
-- [x] CSRF on mutating `/api/*` routes (Edge-safe token cookie)
-- [x] ApiError + `withApi` for consistent 401/403
-- [x] Admin stats + monitoring require SUPER_ADMIN / ORG_ADMIN
+## Pending / blockers
 
-### Frontend
-- [x] Auth: signup (with organizationName), login, forgot/reset password, OTP, accept invite, logout, dark mode
-- [x] Email client: inbox, sent, drafts, trash, spam, starred, search, labels, bulk actions, thread view, reader, reply/reply-all/forward
-- [x] Compose: mailbox picker, CC/BCC, schedule, attachment upload
-- [x] Attachment preview/download in email reader
-- [x] Domains, mailboxes, aliases (client API + session)
-- [x] Organization settings, users, invitations
-- [x] Billing plans UI
-- [x] Admin stats + monitoring dashboards
-- [x] Zyoris design tokens + responsive shell
+| Blocker | Impact |
+|---------|--------|
+| **Real `MONGODB_URI` on Vercel** | Signup/login return 500 |
+| **GoDaddy DNS: `mail` CNAME** | `mail.zyoris.com` does not resolve |
+| **Resend** keys + domain verify | No send/receive |
+| **Upstash `REDIS_URL` + worker** | No scheduled mail |
+| **R2 `STORAGE_*`** | No attachments in prod |
+| **Optional: different Vercel login** | If Puneet’s Vercel ≠ `work.navleensingh@gmail.com`, run `vercel login` |
 
-### Quality
-- [x] Vitest: 10 tests passing (validators, security, routing, health, mailboxes)
-- [x] Playwright smoke specs
-- [x] Production `npm run build` passes locally and on Vercel
-
-### Deployment
-- [x] Vercel project linked: `navleen-s-projects/zyoris-mail`
-- [x] Production deploy: **https://zyoris-mail.vercel.app**
-- [x] Health check live: `/api/health` → `{"ok":true}`
-- [x] Custom domains registered on Vercel project: `mail.zyoris.com`, `zyoris.com`
-- [x] `DEPLOYMENT.md`, `.env.example`, `scripts/set-vercel-env.ps1`, `scripts/seed-admin.ts`
-
-## Pending (requires Cloudflare / Atlas / provider credentials)
-
-- [ ] Point DNS at Vercel (see below) — domains added in Vercel but nameservers/DNS must be configured in Cloudflare
-- [ ] Replace placeholder `MONGODB_URI` in Vercel with MongoDB Atlas M0 connection string
-- [ ] Add `REDIS_URL` (Upstash), `RESEND_API_KEY`, `STORAGE_*` (R2) in Vercel dashboard
-- [ ] Run `npm run seed:admin` against production Atlas after URI is set
-- [ ] Host BullMQ worker (`npm run worker:mail`) on Railway/Render/Docker
-- [ ] Resend: verify `zyoris.com`, configure inbound webhook to production URL
-- [ ] Update `NEXTAUTH_URL` to `https://mail.zyoris.com` after DNS propagates
-
-## Blockers
-
-| Blocker | Owner action |
-|---------|----------------|
-| MongoDB Atlas URI not in Vercel (placeholder) | Add real `MONGODB_URI`; signup/login will fail until fixed |
-| Cloudflare DNS for `mail.zyoris.com` | CNAME `mail` → `cname.vercel-dns.com` (or Vercel-provided target) |
-| Worker not on Vercel | Scheduled send needs separate Redis + worker process |
-| GitHub ↔ Vercel integration | Connect repo in Vercel if you want auto-deploy on push |
-
-## Deployment details
+## Deployment (current)
 
 | Item | Value |
 |------|--------|
+| Vercel user | `worknavleensingh-8981` (`work.navleensingh@gmail.com`) |
 | Vercel team | `navleen-s-projects` |
 | Project | `zyoris-mail` |
+| Project ID | `prj_9Kgnpwy4BlVGxZaOtkUEoMxxNpxp` |
 | Production URL | https://zyoris-mail.vercel.app |
-| Recommended mail app URL | https://mail.zyoris.com |
-| Marketing (optional) | https://www.zyoris.com → redirect or separate site |
-| Inbound webhook | `https://mail.zyoris.com/api/emails/inbound/resend` |
-| Region | `bom1` (vercel.json) |
+| Preview URL pattern | `https://zyoris-mail-<hash>-navleen-s-projects.vercel.app` |
+| Target custom domain | https://mail.zyoris.com (DNS **not** configured) |
 | Inspector | https://vercel.com/navleen-s-projects/zyoris-mail |
 
-### DNS (Cloudflare for zyoris.com)
+## Manual steps for owner
 
-| Type | Name | Value |
-|------|------|-------|
-| CNAME | mail | `cname.vercel-dns.com` |
-| CNAME | www | `cname.vercel-dns.com` (optional marketing) |
-| TXT | @ | SPF from Resend |
-| TXT | resend._domainkey | DKIM from Resend |
-| TXT | _dmarc | `v=DMARC1; p=none` |
-| MX | @ | Resend inbound MX (if using Resend inbound) |
+1. **MongoDB Atlas** — create cluster, set `MONGODB_URI` in Vercel, redeploy, `npm run seed:admin`.
+2. **GoDaddy** — add CNAME: `mail` → `cname.vercel-dns.com` (wait up to 48h).
+3. **Vercel** — set `NEXTAUTH_URL=https://mail.zyoris.com` after DNS works.
+4. **Resend** — verify `zyoris.com`, add API + webhook secrets.
+5. **Upstash + R2** — add env vars; deploy worker.
+6. If Vercel account should be **Puneet’s** (not Navleen’s email): `npx vercel logout` → `npx vercel login` → re-run `scripts/push-vercel-env.mjs` and redeploy.
 
-After DNS propagates, set Vercel env `NEXTAUTH_URL=https://mail.zyoris.com` and redeploy.
+## Credentials required from owner
+
+| Credential | Where to get it |
+|------------|-----------------|
+| `MONGODB_URI` | MongoDB Atlas → Connect |
+| GoDaddy account | DNS for `zyoris.com` |
+| `RESEND_API_KEY` / webhook secret | resend.com |
+| `REDIS_URL` | upstash.com |
+| `STORAGE_*` | Cloudflare R2 |
+| (Optional) Puneet Vercel login | if current CLI user is wrong |
+
+## Admin bootstrap (after Atlas)
+
+Env on Vercel: `SUPER_ADMIN_EMAIL=admin@zyoris.com`, password set via `scripts/push-vercel-env.mjs` (rotate in dashboard). Run `npm run seed:admin` with production `MONGODB_URI`.

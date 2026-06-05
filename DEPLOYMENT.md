@@ -27,7 +27,10 @@
 3. Deploy production branch.
 4. Set custom domain `mail.zyoris.com` (recommended subdomain for mail app).
 
-## 6. Cloudflare DNS (zyoris.com)
+## 6. DNS (zyoris.com)
+
+**Current registrar:** GoDaddy (`ns55.domaincontrol.com`). Use GoDaddy DNS manager (or move NS to Cloudflare).
+
 | Type | Name | Value |
 |------|------|-------|
 | CNAME | mail | cname.vercel-dns.com |
