@@ -2,10 +2,10 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { clientApi } from "@/lib/client-api";
+import { AuthLayout } from "@/components/layout/auth-layout";
 
 function AcceptInviteForm() {
   const router = useRouter();
@@ -16,13 +16,12 @@ function AcceptInviteForm() {
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <Card className="w-full">
-      <h1 className="text-xl font-semibold">Accept invitation</h1>
-      <div className="mt-4 space-y-3">
+    <AuthLayout title="Accept invitation" subtitle="Join your organization on Zyoris Mail.">
+      <div className="space-y-4">
         <Input placeholder="Invitation token" value={token} onChange={(e) => setToken(e.target.value)} />
         <Input placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
         <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
         <Button
           className="w-full"
           onClick={async () => {
@@ -37,16 +36,14 @@ function AcceptInviteForm() {
           Join organization
         </Button>
       </div>
-    </Card>
+    </AuthLayout>
   );
 }
 
 export default function AcceptInvitePage() {
   return (
-    <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
-      <Suspense>
-        <AcceptInviteForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="zyoris-auth-bg flex min-h-screen items-center justify-center text-sm text-[var(--muted)]">Loading…</div>}>
+      <AcceptInviteForm />
+    </Suspense>
   );
 }

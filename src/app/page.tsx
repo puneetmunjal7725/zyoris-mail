@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonSecondary } from "@/components/ui/button";
+import { ZyorisLogo } from "@/components/brand/zyoris-logo";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="zyoris-page-bg min-h-screen">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6">
-        <div className="text-xl font-semibold">Zyoris Mail</div>
-        <div className="flex gap-3">
-          <Link href="/login" className="text-sm text-[var(--muted)] hover:text-[var(--foreground)]">
+        <ZyorisLogo />
+        <div className="flex items-center gap-3">
+          <Link href="/login" className="text-sm text-[var(--muted)] transition-colors hover:text-[var(--foreground)]">
             Sign in
           </Link>
           <Link href="/signup">
@@ -17,19 +18,20 @@ export default function HomePage() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 pb-20">
-        <section className="py-16 text-center">
-          <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Business email on your domain</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-[var(--muted)]">
-            Zyoris Mail helps teams run professional mailboxes like info@, sales@, and support@ with DNS verification, aliases, and enterprise controls.
+        <section className="py-16 text-center md:py-24">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-cyan-400/90">Zyoris Mail</p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
+            Business email on <span className="bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent">your domain</span>
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--muted)]">
+            Professional mailboxes, DNS verification, aliases, and enterprise controls — built with the same design language as Zyoris.
           </p>
-          <div className="mt-8 flex justify-center gap-3">
+          <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Link href="/signup">
-              <Button className="px-6 py-3 text-base">Start free</Button>
+              <Button className="px-8 py-3 text-base">Start free</Button>
             </Link>
             <Link href="/login">
-              <Button className="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] px-6 py-3 text-base">
-                Sign in
-              </Button>
+              <ButtonSecondary className="px-8 py-3 text-base">Sign in</ButtonSecondary>
             </Link>
           </div>
         </section>
@@ -41,7 +43,7 @@ export default function HomePage() {
           ].map(([title, body]) => (
             <Card key={title}>
               <h3 className="font-semibold">{title}</h3>
-              <p className="mt-2 text-sm text-[var(--muted)]">{body}</p>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">{body}</p>
             </Card>
           ))}
         </section>

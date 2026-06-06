@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonSecondary } from "@/components/ui/button";
 import { clientApi } from "@/lib/client-api";
+import { AuthLayout } from "@/components/layout/auth-layout";
 
 function OtpForm() {
   const searchParams = useSearchParams();
@@ -17,12 +17,10 @@ function OtpForm() {
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <Card className="w-full">
-      <h1 className="text-xl font-semibold">Verify OTP</h1>
-      <p className="mt-2 text-sm text-[var(--muted)]">Enter the 6-digit code sent to {email}</p>
-      <div className="mt-4 space-y-3">
-        <Input placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} maxLength={6} />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+    <AuthLayout title="Verify OTP" subtitle={`Enter the 6-digit code sent to ${email}`}>
+      <div className="space-y-4">
+        <Input placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} maxLength={6} inputMode="numeric" />
+        {error && <p className="text-sm text-red-400">{error}</p>}
         <Button
           className="w-full"
           onClick={async () => {
@@ -39,28 +37,26 @@ function OtpForm() {
         >
           Verify
         </Button>
-        <Button
-          className="w-full bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]"
+        <ButtonSecondary
+          className="w-full"
           onClick={async () => {
             await clientApi("/api/auth/send-otp", { method: "POST", body: JSON.stringify({ email, purpose }) });
           }}
         >
           Resend code
-        </Button>
-        <Link href="/login" className="block text-center text-sm text-[var(--primary)]">
+        </ButtonSecondary>
+        <Link href="/login" className="block text-center text-sm text-cyan-400 hover:underline">
           Back to login
         </Link>
       </div>
-    </Card>
+    </AuthLayout>
   );
 }
 
 export default function OTPPage() {
   return (
-    <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
-      <Suspense>
-        <OtpForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="zyoris-auth-bg flex min-h-screen items-center justify-center text-sm text-[var(--muted)]">Loading…</div>}>
+      <OtpForm />
+    </Suspense>
   );
 }

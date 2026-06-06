@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { clientApi } from "@/lib/client-api";
+import { AuthLayout } from "@/components/layout/auth-layout";
 
 function ResetForm() {
   const searchParams = useSearchParams();
@@ -16,13 +16,11 @@ function ResetForm() {
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <Card className="w-full">
-      <h1 className="text-xl font-semibold">Set new password</h1>
-      <p className="mt-2 text-sm text-[var(--muted)]">Enter the token from your email for {searchParams.get("email")}</p>
-      <div className="mt-4 space-y-3">
+    <AuthLayout title="Set new password" subtitle={`Enter the token from your email for ${searchParams.get("email")}`}>
+      <div className="space-y-4">
         <Input placeholder="Reset token" value={token} onChange={(e) => setToken(e.target.value)} />
         <Input type="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
         <Button
           className="w-full"
           onClick={async () => {
@@ -36,20 +34,18 @@ function ResetForm() {
         >
           Update password
         </Button>
-        <Link href="/login" className="block text-center text-sm text-[var(--primary)]">
+        <Link href="/login" className="block text-center text-sm text-cyan-400 hover:underline">
           Back to login
         </Link>
       </div>
-    </Card>
+    </AuthLayout>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
-      <Suspense>
-        <ResetForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="zyoris-auth-bg flex min-h-screen items-center justify-center text-sm text-[var(--muted)]">Loading…</div>}>
+      <ResetForm />
+    </Suspense>
   );
 }

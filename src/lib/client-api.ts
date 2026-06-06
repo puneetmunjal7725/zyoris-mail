@@ -19,7 +19,17 @@ export async function clientApi<T = unknown>(url: string, init: RequestInit = {}
   const res = await fetch(url, { ...init, headers, credentials: "include" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error((data as { error?: string }).error || `Request failed (${res.status})`);
+    const err = (data as { error?: unknown }).error;
+    let message = `Request failed (${res.status})`;
+    if (typeof err === "string") message = err;
+    else if (err && typeof err === "object" && "formErrors" in (err as object)) {
+      const flat = err as { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
+      const parts = [...(flat.formErrors || []), ...Object.values(flat.fieldErrors || {}).flat()];
+      if (parts.length) message = parts.join(". ");
+    } else if (err && typeof err === "object") {
+      message = JSON.stringify(err);
+    }
+    throw new Error(message);
   }
   return data as T;
 }

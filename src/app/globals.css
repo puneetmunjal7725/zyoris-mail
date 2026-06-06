@@ -1,28 +1,38 @@
 @import "tailwindcss";
 
 :root {
+  --background: #050816;
+  --foreground: #e5e7eb;
+  --card: rgba(15, 23, 42, 0.92);
+  --card-foreground: #e5e7eb;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --accent: rgba(56, 189, 248, 0.12);
+  --accent-foreground: #e5e7eb;
+  --muted: #9ca3af;
+  --border: rgba(55, 65, 81, 0.85);
+  --input: rgba(15, 23, 42, 0.95);
+  --ring: rgba(56, 189, 248, 0.55);
+  --gradient-start: #22d3ee;
+  --gradient-end: #6366f1;
+  --radius: 0.9rem;
+}
+
+.light {
   --background: #f5f7fc;
   --foreground: #0b0d14;
   --card: #ffffff;
   --card-foreground: #0b0d14;
   --primary: #3a66f7;
   --primary-foreground: #ffffff;
+  --accent: #eef2ff;
+  --accent-foreground: #0b0d14;
   --muted: #5a6175;
   --border: #e6e8ee;
-  --accent: #eef2ff;
-  --radius: 0.75rem;
-}
-
-.dark {
-  --background: #090b12;
-  --foreground: #e6e8ee;
-  --card: #11131a;
-  --card-foreground: #e6e8ee;
-  --primary: #3a66f7;
-  --primary-foreground: #ffffff;
-  --muted: #9aa3b5;
-  --border: #252833;
-  --accent: #1a1f2d;
+  --input: #ffffff;
+  --ring: rgba(58, 102, 247, 0.45);
+  --gradient-start: #3a66f7;
+  --gradient-end: #6366f1;
 }
 
 body {
@@ -33,4 +43,65 @@ body {
 
 * {
   border-color: var(--border);
+}
+
+.zyoris-page-bg {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.45), transparent 55%),
+    radial-gradient(circle at bottom, rgba(16, 185, 129, 0.28), var(--background) 65%);
+}
+
+.zyoris-auth-bg {
+  background:
+    radial-gradient(circle at top, rgba(37, 99, 235, 0.55), transparent 60%),
+    radial-gradient(circle at bottom, rgba(16, 185, 129, 0.35), var(--background) 70%);
+}
+
+.zyoris-panel {
+  border-radius: 1.25rem;
+  border: 1px solid var(--border);
+  background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.99));
+  box-shadow: 0 32px 70px rgba(15, 23, 42, 0.55);
+}
+
+.light .zyoris-panel {
+  background: var(--card);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+.zyoris-sidebar {
+  background: radial-gradient(circle at top, #111827 0, #020617 60%);
+  border: 1px solid var(--border);
+}
+
+.light .zyoris-sidebar {
+  background: var(--card);
+}
+
+.zyoris-content {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.2), transparent 55%),
+    radial-gradient(circle at bottom, rgba(16, 185, 129, 0.12), transparent 65%);
+}
+
+.zyoris-nav-active {
+  background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 70%);
+  border: 1px solid rgba(129, 140, 248, 0.55);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.25);
+  color: var(--foreground);
+}
+
+.zyoris-btn-primary {
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35);
+}
+
+.zyoris-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.prose-mail a {
+  color: #38bdf8;
 }
