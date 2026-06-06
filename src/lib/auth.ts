@@ -17,7 +17,8 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
         await connectToDatabase();
-        const user = await User.findOne({ email: credentials.email.toLowerCase() });
+        const email = credentials.email.toLowerCase().trim();
+        const user = await User.findOne({ email });
         if (!user) return null;
 
         if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -25,7 +26,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (!user.isVerified && user.role !== "SUPER_ADMIN") {
-          return null;
+          throw new Error("EMAIL_NOT_VERIFIED");
         }
 
         const valid = await bcrypt.compare(credentials.password, user.passwordHash);

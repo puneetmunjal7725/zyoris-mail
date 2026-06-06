@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import Mailgun from "mailgun.js";
 import FormData from "form-data";
 import { Resend } from "resend";
-import { getEnv } from "@/lib/env";
+import { getMailEnv } from "@/lib/env";
 
 type SendEmailInput = {
   to: string[];
@@ -15,7 +15,7 @@ type SendEmailInput = {
 };
 
 export async function sendProviderEmail(input: SendEmailInput) {
-  const env = getEnv();
+  const env = getMailEnv();
   const from = input.from || env.FROM_EMAIL;
 
   if (env.EMAIL_PROVIDER === "RESEND") {
