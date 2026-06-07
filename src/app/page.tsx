@@ -9,7 +9,7 @@ export default function HomePage() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6">
         <ZyorisLogo />
         <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm text-[var(--muted)] transition-colors hover:text-[var(--foreground)]">
+          <Link href="/login" className="text-sm text-[var(--muted)] hover:text-[var(--foreground)]">
             Sign in
           </Link>
           <Link href="/signup">
@@ -19,12 +19,12 @@ export default function HomePage() {
       </header>
       <main className="mx-auto max-w-6xl px-4 pb-20">
         <section className="py-16 text-center md:py-24">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-cyan-400/90">Zyoris Mail</p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
-            Business email on <span className="bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent">your domain</span>
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-[var(--muted)]">Zyoris Mail</p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-[var(--foreground)] md:text-5xl">
+            Business email on your domain
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--muted)]">
-            Professional mailboxes, DNS verification, aliases, and enterprise controls — built with the same design language as Zyoris.
+            Professional mailboxes, DNS verification, aliases, and team controls — calm, familiar, and built for daily use.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Link href="/signup">

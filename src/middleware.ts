@@ -21,6 +21,7 @@ const csrfExempt = [
   "/api/emails/inbound",
   "/api/health",
   "/api/invitations/accept",
+  "/api/setup/bootstrap",
 ];
 
 function ensureCsrfCookie(res: NextResponse) {

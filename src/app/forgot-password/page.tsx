@@ -17,9 +17,12 @@ export default function ForgotPasswordPage() {
   return (
     <AuthLayout title="Reset password" subtitle="We will email you a reset token.">
       <div className="space-y-4">
-        <Input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-        {message && <p className="text-sm text-emerald-400">{message}</p>}
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        <div>
+          <label className="zyoris-label">Email</label>
+          <Input placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+        </div>
+        {message && <div className="rounded-lg border border-[var(--pastel-sage)] bg-[var(--secondary)] px-3 py-2 text-sm">{message}</div>}
+        {error && <div className="zyoris-error">{error}</div>}
         <Button
           className="w-full"
           onClick={async () => {
@@ -34,8 +37,8 @@ export default function ForgotPasswordPage() {
         >
           Send reset email
         </Button>
-        <Link href="/login" className="block text-center text-sm text-cyan-400 hover:underline">
-          Back to login
+        <Link href="/login" className="block text-center text-sm zyoris-link">
+          Back to sign in
         </Link>
       </div>
     </AuthLayout>

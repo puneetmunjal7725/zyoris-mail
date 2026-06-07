@@ -38,9 +38,9 @@ export default function LoginPage() {
 
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to manage mailboxes, domains, and team delivery settings.">
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div>
-          <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-[#9ca3af]">Work email</label>
+          <label className="zyoris-label">Work email</label>
           <Input
             placeholder="you@company.com"
             value={email}
@@ -50,7 +50,7 @@ export default function LoginPage() {
           />
         </div>
         <div>
-          <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-[#9ca3af]">Password</label>
+          <label className="zyoris-label">Password</label>
           <Input
             type="password"
             placeholder="Enter your password"
@@ -61,26 +61,22 @@ export default function LoginPage() {
           />
         </div>
 
-        {error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            {error}
-          </div>
-        )}
+        {error && <div className="zyoris-error">{error}</div>}
 
-        <Button className="w-full py-2.5" disabled={loading || !email || !password} onClick={handleLogin}>
-          {loading ? "Signing in…" : "Sign in to dashboard"}
+        <Button className="w-full" disabled={loading || !email || !password} onClick={handleLogin}>
+          {loading ? "Signing in…" : "Sign in"}
         </Button>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs leading-relaxed text-[#9ca3af]">
-          New here? Create an account, verify your email with the 6-digit OTP, then sign in.
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--secondary)] px-3 py-3 text-xs text-[var(--muted)]">
+          New here? Create an account, verify with the 6-digit OTP, then sign in.
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <Link href="/forgot-password" className="text-cyan-400 hover:underline">
+          <Link href="/forgot-password" className="zyoris-link">
             Forgot password?
           </Link>
           <Link href="/signup">
-            <ButtonSecondary className="px-4 py-2">Create account</ButtonSecondary>
+            <ButtonSecondary>Create account</ButtonSecondary>
           </Link>
         </div>
       </div>

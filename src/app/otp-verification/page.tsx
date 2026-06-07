@@ -34,61 +34,58 @@ function OtpForm() {
     >
       <div className="space-y-4">
         {!emailSent && hintOtp && (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
-            Email delivery is not configured yet. Use this code: <strong className="text-white">{hintOtp}</strong>
+          <div className="rounded-lg border border-[var(--pastel-peach)] bg-[var(--secondary)] px-3 py-3 text-sm">
+            Email delivery is not configured yet. Use this code: <strong>{hintOtp}</strong>
           </div>
         )}
 
         {emailSent && (
-          <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-3 text-sm text-cyan-100">
+          <div className="rounded-lg border border-[var(--pastel-blue)] bg-[var(--secondary)] px-3 py-3 text-sm text-[var(--muted)]">
             We sent a 6-digit code to your inbox. It expires in 10 minutes.
           </div>
         )}
 
-        <Input
-          placeholder="123456"
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          maxLength={6}
-          inputMode="numeric"
-          className="text-center text-lg tracking-[0.4em]"
-        />
-        {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</div>}
-        {success && <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">{success}</div>}
+        <div>
+          <label className="zyoris-label">Verification code</label>
+          <Input
+            placeholder="123456"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+          />
+        </div>
+
+        {error && <div className="zyoris-error">{error}</div>}
+        {success && <div className="rounded-lg border border-[var(--pastel-sage)] bg-[var(--secondary)] px-3 py-2 text-sm">{success}</div>}
 
         <Button
-          className="w-full py-2.5"
+          className="w-full"
           disabled={code.length !== 6}
           onClick={async () => {
+            setError(null);
             try {
               await clientApi("/api/auth/verify-otp", {
                 method: "POST",
-                body: JSON.stringify({ email, code, purpose }),
+                body: JSON.stringify({ email, purpose, code }),
               });
               sessionStorage.removeItem("zyoris_signup_otp");
-              setSuccess("Email verified! Redirecting to sign in…");
+              setSuccess("Email verified. You can sign in now.");
               setTimeout(() => router.push("/login"), 1200);
             } catch (e) {
               setError(e instanceof Error ? e.message : "Verification failed");
             }
           }}
         >
-          Verify & continue
+          Verify email
         </Button>
 
         <ButtonSecondary
           className="w-full"
           onClick={async () => {
             try {
-              const data = await clientApi<{ verificationOtp?: string; emailSent?: boolean }>("/api/auth/send-otp", {
-                method: "POST",
-                body: JSON.stringify({ email, purpose }),
-              });
-              if (data.verificationOtp) {
-                setHintOtp(data.verificationOtp);
-                setCode(data.verificationOtp);
-              }
-              setSuccess(data.emailSent ? "A new code was sent to your email." : "New code generated below.");
+              await clientApi("/api/auth/send-otp", { method: "POST", body: JSON.stringify({ email, purpose }) });
+              setSuccess("A new code was sent.");
             } catch (e) {
               setError(e instanceof Error ? e.message : "Could not resend code");
             }
@@ -97,7 +94,7 @@ function OtpForm() {
           Resend code
         </ButtonSecondary>
 
-        <Link href="/login" className="block text-center text-sm text-cyan-400 hover:underline">
+        <Link href="/login" className="block text-center text-sm zyoris-link">
           Back to sign in
         </Link>
       </div>
@@ -105,9 +102,9 @@ function OtpForm() {
   );
 }
 
-export default function OTPPage() {
+export default function OtpVerificationPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#050816] text-sm text-[#9ca3af]">Loading…</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-[var(--muted)]">Loading…</div>}>
       <OtpForm />
     </Suspense>
   );

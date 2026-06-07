@@ -20,33 +20,25 @@ export default function SignupPage() {
   return (
     <AuthLayout title="Create your workspace" subtitle="Set up your organization and verify your email to start using Zyoris Mail.">
       <div className="space-y-4">
-        <Input placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} />
-        <Input placeholder="Organization name" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} />
-        <Input placeholder="Work email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-        <Input type="password" placeholder="Password (min 8 characters)" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
-        {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</div>}
+        <div><label className="zyoris-label">Full name</label><Input placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} /></div>
+        <div><label className="zyoris-label">Organization</label><Input placeholder="Organization name" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} /></div>
+        <div><label className="zyoris-label">Work email</label><Input placeholder="Work email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></div>
+        <div><label className="zyoris-label">Password</label><Input type="password" placeholder="Min 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" /></div>
+        {error && <div className="zyoris-error">{error}</div>}
         <Button
-          className="w-full py-2.5"
+          className="w-full"
           disabled={loading}
           onClick={async () => {
             setLoading(true);
             setError(null);
             try {
-              const data = await clientApi<{
-                emailSent?: boolean;
-                verificationOtp?: string;
-                message?: string;
-              }>("/api/auth/signup", {
+              const data = await clientApi<{ emailSent?: boolean; verificationOtp?: string }>("/api/auth/signup", {
                 method: "POST",
                 body: JSON.stringify({ name, organizationName, email: email.trim().toLowerCase(), password }),
               });
               const normalized = email.trim().toLowerCase();
-              if (data.verificationOtp) {
-                sessionStorage.setItem("zyoris_signup_otp", data.verificationOtp);
-              }
-              router.push(
-                `/otp-verification?email=${encodeURIComponent(normalized)}&purpose=VERIFY_EMAIL&emailSent=${data.emailSent ? "1" : "0"}`
-              );
+              if (data.verificationOtp) sessionStorage.setItem("zyoris_signup_otp", data.verificationOtp);
+              router.push(`/otp-verification?email=${encodeURIComponent(normalized)}&purpose=VERIFY_EMAIL&emailSent=${data.emailSent ? "1" : "0"}`);
             } catch (e) {
               setError(e instanceof Error ? e.message : "Signup failed");
             } finally {
@@ -54,13 +46,10 @@ export default function SignupPage() {
             }
           }}
         >
-          {loading ? "Creating account…" : "Create account & verify email"}
+          {loading ? "Creating account…" : "Create account"}
         </Button>
-        <p className="text-center text-sm text-[#9ca3af]">
-          Already have an account?{" "}
-          <Link href="/login" className="text-cyan-400 hover:underline">
-            Sign in
-          </Link>
+        <p className="text-center text-sm text-[var(--muted)]">
+          Already have an account? <Link href="/login" className="zyoris-link">Sign in</Link>
         </p>
       </div>
     </AuthLayout>

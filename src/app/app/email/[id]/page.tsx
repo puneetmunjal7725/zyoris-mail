@@ -98,6 +98,15 @@ export default function EmailDetailPage() {
               Star
             </Button>
             <Button
+              className="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]"
+              onClick={async () => {
+                await clientApi("/api/emails", { method: "PATCH", body: JSON.stringify({ emailId: email._id, action: "ARCHIVE" }) });
+                router.push("/app/archive");
+              }}
+            >
+              Archive
+            </Button>
+            <Button
               className="bg-red-600 text-white"
               onClick={async () => {
                 await clientApi("/api/emails", { method: "PATCH", body: JSON.stringify({ emailId: email._id, action: "DELETE" }) });

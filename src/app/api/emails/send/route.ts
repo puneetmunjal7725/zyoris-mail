@@ -7,6 +7,7 @@ import { Email, EmailThread, ActivityLog, ScheduledEmail, Mailbox, Organization 
 import { sendProviderEmail } from "@/lib/services/mailer";
 import { getMailQueue } from "@/lib/queue/mail-queue";
 import { estimateEmailBytes } from "@/lib/mailbox-routing";
+import { assertCanSendEmail, recordOutboundEmail } from "@/lib/plan-limits";
 
 export async function POST(req: Request) {
   const session = await requireRole(["SUPER_ADMIN", "ORG_ADMIN", "USER"]);
@@ -15,6 +16,12 @@ export async function POST(req: Request) {
   if (!session.user.organizationId || !session.user.email) return NextResponse.json({ error: "Organization context missing" }, { status: 400 });
 
   await connectToDatabase();
+
+  try {
+    await assertCanSendEmail(String(session.user.organizationId));
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Send limit exceeded" }, { status: 403 });
+  }
 
   const mailbox = await Mailbox.findOne({ emailAddress: parsed.data.mailbox.toLowerCase(), organizationId: session.user.organizationId });
   if (!mailbox) return NextResponse.json({ error: "Mailbox not found" }, { status: 404 });
@@ -80,7 +87,7 @@ export async function POST(req: Request) {
     { _id: mailbox._id },
     { $inc: { sentCount: 1, storageUsedBytes: outgoingBytes }, $set: { lastActivityAt: new Date() } }
   );
-  await Organization.updateOne({ _id: session.user.organizationId }, { $inc: { storageUsedBytes: outgoingBytes } });
+  await recordOutboundEmail(String(session.user.organizationId), outgoingBytes);
 
   await ActivityLog.create({ organizationId: session.user.organizationId, userId: session.user.id, action: "EMAIL_CREATED", metadata: { emailId: email._id } });
 

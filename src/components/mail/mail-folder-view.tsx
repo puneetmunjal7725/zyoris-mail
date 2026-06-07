@@ -1,13 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { clientApi } from "@/lib/client-api";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
+import { formatMailDate, groupEmailsByDate } from "@/lib/mail-date";
 
 type EmailRow = {
   _id: string;
@@ -31,10 +29,9 @@ export function MailFolderView({ folder, title }: Props) {
   const searchParams = useSearchParams();
   const [emails, setEmails] = useState<EmailRow[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [q, setQ] = useState(searchParams.get("q") || "");
-  const [mailbox, setMailbox] = useState(searchParams.get("mailbox") || "");
-  const [label, setLabel] = useState(searchParams.get("label") || "");
-  const [mailboxes, setMailboxes] = useState<{ _id: string; emailAddress: string }[]>([]);
+  const q = searchParams.get("q") || "";
+  const mailbox = searchParams.get("mailbox") || "";
+  const label = searchParams.get("label") || "";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,13 +56,8 @@ export function MailFolderView({ folder, title }: Props) {
     load();
   }, [load]);
 
-  useEffect(() => {
-    clientApi<{ _id: string; emailAddress: string }[]>("/api/mailboxes")
-      .then(setMailboxes)
-      .catch(() => undefined);
-  }, []);
-
   const allSelected = useMemo(() => emails.length > 0 && selected.size === emails.length, [emails, selected]);
+  const grouped = useMemo(() => groupEmailsByDate(emails), [emails]);
 
   async function bulk(action: string) {
     if (!selected.size) return;
@@ -77,56 +69,40 @@ export function MailFolderView({ folder, title }: Props) {
     await load();
   }
 
+  async function toggleStar(email: EmailRow, e: React.MouseEvent) {
+    e.stopPropagation();
+    await clientApi("/api/emails", {
+      method: "PATCH",
+      body: JSON.stringify({ emailId: email._id, action: email.isStarred ? "UNSTAR" : "STAR" }),
+    });
+    await load();
+  }
+
   return (
-    <Card className="p-0 overflow-hidden">
-      <div className="border-b border-[var(--border)] p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold">{title}</h2>
-          <Link href="/app/compose" className="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm text-white">
-            Compose
-          </Link>
-        </div>
-        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-4">
-          <Input placeholder="Search mail" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} />
-          <select
-            className="h-10 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 text-sm"
-            value={mailbox}
-            onChange={(e) => setMailbox(e.target.value)}
-          >
-            <option value="">All mailboxes</option>
-            {mailboxes.map((m) => (
-              <option key={m._id} value={m.emailAddress}>
-                {m.emailAddress}
-              </option>
-            ))}
-          </select>
-          <Input placeholder="Label filter" value={label} onChange={(e) => setLabel(e.target.value)} />
-          <Button onClick={load}>Apply filters</Button>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button className="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]" onClick={() => bulk("MARK_READ")}>
+    <Card className="overflow-hidden p-0 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--card)] px-4 py-3">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <div className="flex flex-wrap gap-2">
+          <Button className="h-8 bg-[var(--card)] text-xs text-[var(--foreground)] border border-[var(--border)]" onClick={() => bulk("MARK_READ")}>
             Mark read
           </Button>
-          <Button className="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]" onClick={() => bulk("DELETE")}>
-            Delete
-          </Button>
-          <Button className="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]" onClick={() => bulk("STAR")}>
-            Star
-          </Button>
-          <Button className="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]" onClick={() => bulk("ARCHIVE")}>
+          <Button className="h-8 bg-[var(--card)] text-xs text-[var(--foreground)] border border-[var(--border)]" onClick={() => bulk("ARCHIVE")}>
             Archive
+          </Button>
+          <Button className="h-8 bg-[var(--card)] text-xs text-[var(--foreground)] border border-[var(--border)]" onClick={() => bulk("DELETE")}>
+            Delete
           </Button>
         </div>
       </div>
 
-      {error && <div className="p-4 text-sm text-red-600">{error}</div>}
+      {error && <div className="p-4 text-sm text-red-700">{error}</div>}
       {loading ? (
         <div className="p-8 text-sm text-[var(--muted)]">Loading messages…</div>
       ) : emails.length === 0 ? (
         <div className="p-8 text-sm text-[var(--muted)]">No messages in this folder.</div>
       ) : (
         <div>
-          <div className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-2 text-xs text-[var(--muted)]">
+          <div className="flex items-center gap-2 border-b border-[var(--border)] bg-[var(--secondary)] px-4 py-2 text-xs text-[var(--muted)]">
             <input
               type="checkbox"
               checked={allSelected}
@@ -134,33 +110,44 @@ export function MailFolderView({ folder, title }: Props) {
             />
             <span>{selected.size} selected</span>
           </div>
-          {emails.map((email) => (
-            <div
-              key={email._id}
-              className={`flex cursor-pointer items-start gap-3 border-b border-[var(--border)] px-4 py-3 hover:bg-[var(--accent)] ${email.isRead ? "" : "bg-[var(--accent)]/60"}`}
-              onClick={() => router.push(`/app/email/${email._id}`)}
-            >
-              <input
-                type="checkbox"
-                checked={selected.has(email._id)}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  const next = new Set(selected);
-                  if (e.target.checked) next.add(email._id);
-                  else next.delete(email._id);
-                  setSelected(next);
-                }}
-              />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <div className={`truncate text-sm ${email.isRead ? "" : "font-semibold"}`}>{email.from}</div>
-                  <div className="shrink-0 text-xs text-[var(--muted)]">
-                    {formatDistanceToNow(new Date(email.createdAt), { addSuffix: true })}
+          {grouped.map(([group, rows]) => (
+            <div key={group}>
+              <div className="gmail-date-group">{group}</div>
+              {rows.map((email) => (
+                <div
+                  key={email._id}
+                  className={`gmail-row flex cursor-pointer items-center gap-3 border-b border-[var(--border)] px-4 py-2 ${email.isRead ? "text-[var(--muted)]" : "gmail-row-unread text-[var(--foreground)]"}`}
+                  onClick={() => router.push(`/app/email/${email._id}`)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(email._id)}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => {
+                      const next = new Set(selected);
+                      if (e.target.checked) next.add(email._id);
+                      else next.delete(email._id);
+                      setSelected(next);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className={`text-base ${email.isStarred ? "text-[var(--pastel-peach)]" : "text-[var(--muted)]"}`}
+                    onClick={(e) => toggleStar(email, e)}
+                    aria-label="Star"
+                  >
+                    {email.isStarred ? "★" : "☆"}
+                  </button>
+                  <div className="w-36 shrink-0 truncate text-sm">{email.from.replace(/<.*>/, "").trim()}</div>
+                  <div className="min-w-0 flex-1 truncate text-sm">
+                    <span className={email.isRead ? "" : "font-semibold"}>{email.subject || "(no subject)"}</span>
+                    <span className="text-[var(--muted)]"> — {email.bodyText.slice(0, 80)}</span>
+                  </div>
+                  <div className="w-16 shrink-0 text-right text-xs text-[var(--muted)]">
+                    {formatMailDate(email.createdAt)}
                   </div>
                 </div>
-                <div className={`truncate text-sm ${email.isRead ? "text-[var(--muted)]" : "font-medium"}`}>{email.subject}</div>
-                <div className="truncate text-xs text-[var(--muted)]">{email.bodyText.slice(0, 120)}</div>
-              </div>
+              ))}
             </div>
           ))}
         </div>

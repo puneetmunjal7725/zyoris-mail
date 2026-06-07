@@ -1,38 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050816;
-  --foreground: #e5e7eb;
-  --card: rgba(15, 23, 42, 0.92);
-  --card-foreground: #e5e7eb;
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
-  --accent: rgba(56, 189, 248, 0.12);
-  --accent-foreground: #e5e7eb;
-  --muted: #9ca3af;
-  --border: rgba(55, 65, 81, 0.85);
-  --input: rgba(15, 23, 42, 0.95);
-  --ring: rgba(56, 189, 248, 0.55);
-  --gradient-start: #22d3ee;
-  --gradient-end: #6366f1;
-  --radius: 0.9rem;
+  --background: #f8f7f4;
+  --foreground: #1f2937;
+  --card: #fcfbf8;
+  --card-foreground: #1f2937;
+  --secondary: #f5f4f1;
+  --primary: #6b7fd7;
+  --primary-foreground: #1f2937;
+  --accent: #f5f4f1;
+  --accent-foreground: #1f2937;
+  --muted: #6b7280;
+  --border: #e8e5df;
+  --input: #fcfbf8;
+  --ring: #afcbff;
+  --radius: 0.625rem;
+  --shadow-sm: 0 1px 2px rgba(31, 41, 55, 0.04);
+  --shadow-md: 0 4px 12px rgba(31, 41, 55, 0.06);
+  --pastel-blue: #afcbff;
+  --pastel-indigo: #b8b5ff;
+  --pastel-sage: #bfd8bd;
+  --pastel-lavender: #dcccf8;
+  --pastel-peach: #f6d1b1;
+  --pastel-rose: #e9c6c6;
 }
 
-.light {
-  --background: #f5f7fc;
-  --foreground: #0b0d14;
-  --card: #ffffff;
-  --card-foreground: #0b0d14;
-  --primary: #3a66f7;
-  --primary-foreground: #ffffff;
-  --accent: #eef2ff;
-  --accent-foreground: #0b0d14;
-  --muted: #5a6175;
-  --border: #e6e8ee;
-  --input: #ffffff;
-  --ring: rgba(58, 102, 247, 0.45);
-  --gradient-start: #3a66f7;
-  --gradient-end: #6366f1;
+.dark {
+  --background: #1c1f26;
+  --foreground: #e8e6e1;
+  --card: #252830;
+  --card-foreground: #e8e6e1;
+  --secondary: #2a2e38;
+  --primary: #8b9fd4;
+  --primary-foreground: #1f2937;
+  --accent: #2a2e38;
+  --accent-foreground: #e8e6e1;
+  --muted: #9ca3af;
+  --border: #3a3f4b;
+  --input: #252830;
+  --ring: #6b7fd7;
 }
 
 body {
@@ -46,62 +52,110 @@ body {
 }
 
 .zyoris-page-bg {
-  background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.45), transparent 55%),
-    radial-gradient(circle at bottom, rgba(16, 185, 129, 0.28), var(--background) 65%);
+  background: var(--background);
 }
 
 .zyoris-auth-bg {
-  background:
-    radial-gradient(circle at top, rgba(37, 99, 235, 0.55), transparent 60%),
-    radial-gradient(circle at bottom, rgba(16, 185, 129, 0.35), var(--background) 70%);
+  background: var(--background);
 }
 
-.zyoris-panel {
-  border-radius: 1.25rem;
+.zyoris-panel,
+.zyoris-card {
+  border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.99));
-  box-shadow: 0 32px 70px rgba(15, 23, 42, 0.55);
-}
-
-.light .zyoris-panel {
   background: var(--card);
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 .zyoris-sidebar {
-  background: radial-gradient(circle at top, #111827 0, #020617 60%);
+  background: var(--card);
   border: 1px solid var(--border);
 }
 
-.light .zyoris-sidebar {
-  background: var(--card);
-}
-
 .zyoris-content {
-  background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.2), transparent 55%),
-    radial-gradient(circle at bottom, rgba(16, 185, 129, 0.12), transparent 65%);
+  background: var(--background);
 }
 
 .zyoris-nav-active {
-  background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 70%);
-  border: 1px solid rgba(129, 140, 248, 0.55);
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.25);
+  background: var(--pastel-blue);
   color: var(--foreground);
+  font-weight: 500;
 }
 
 .zyoris-btn-primary {
-  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-  color: #fff;
-  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35);
+  background: var(--pastel-indigo);
+  color: var(--foreground);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
 }
 
 .zyoris-btn-primary:hover:not(:disabled) {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
+  background: #a8a4f5;
+}
+
+.zyoris-search-bar {
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  box-shadow: var(--shadow-sm);
+}
+
+.gmail-row:hover {
+  background: var(--secondary);
+}
+
+.gmail-row-unread {
+  background: var(--card);
+  font-weight: 600;
+}
+
+.gmail-date-group {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  background: var(--secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.compose-window {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--shadow-md);
+}
+
+.compose-titlebar {
+  background: var(--pastel-lavender);
+  border-bottom: 1px solid var(--border);
 }
 
 .prose-mail a {
-  color: #38bdf8;
+  color: var(--primary);
+}
+
+.zyoris-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.375rem;
+  display: block;
+}
+
+.zyoris-error {
+  border-radius: var(--radius);
+  border: 1px solid var(--pastel-rose);
+  background: #fdf5f5;
+  color: #7f1d1d;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.zyoris-link {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.zyoris-link:hover {
+  text-decoration: underline;
 }

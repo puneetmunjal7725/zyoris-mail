@@ -1,21 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Button, ButtonSecondary } from "@/components/ui/button";
+import { ButtonSecondary } from "@/components/ui/button";
 import { ZyorisLogo } from "@/components/brand/zyoris-logo";
+import { KeyboardShortcuts } from "@/components/mail/keyboard-shortcuts";
+import { useCompose } from "@/components/mail/compose-provider";
 
 const mailItems = [
   ["/app/inbox", "Inbox"],
+  ["/app/starred", "Starred"],
   ["/app/sent", "Sent"],
   ["/app/drafts", "Drafts"],
-  ["/app/starred", "Starred"],
+  ["/app/archive", "Archive"],
   ["/app/spam", "Spam"],
   ["/app/trash", "Trash"],
-  ["/app/compose", "Compose"],
 ] as const;
 
 const orgItems = [
@@ -33,8 +36,8 @@ const adminItems = [
 
 function NavSection({ title, items, pathname }: { title: string; items: readonly (readonly [string, string])[]; pathname: string }) {
   return (
-    <div className="mt-4">
-      <div className="mb-2 px-3 text-[0.65rem] font-medium uppercase tracking-[0.16em] text-[var(--muted)]">{title}</div>
+    <div className="mt-2">
+      <div className="mb-1 px-2 text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--muted)]">{title}</div>
       <nav className="space-y-0.5">
         {items.map(([href, label]) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
@@ -43,12 +46,11 @@ function NavSection({ title, items, pathname }: { title: string; items: readonly
               key={href}
               href={href}
               className={cn(
-                "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all",
-                active ? "zyoris-nav-active" : "text-[var(--muted)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+                "block rounded-lg px-3 py-2 text-sm transition-colors",
+                active ? "zyoris-nav-active" : "text-[var(--foreground)] hover:bg-[var(--secondary)]"
               )}
             >
-              <span>{label}</span>
-              <span className="text-xs opacity-60">›</span>
+              {label}
             </Link>
           );
         })}
@@ -59,8 +61,25 @@ function NavSection({ title, items, pathname }: { title: string; items: readonly
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
+  const { openCompose } = useCompose();
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+
+  useEffect(() => {
+    setSearch(searchParams.get("q") || "");
+  }, [searchParams]);
+
+  const runSearch = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (search) params.set("q", search);
+    else params.delete("q");
+    const base = pathname.startsWith("/app/") ? pathname : "/app/inbox";
+    router.push(`${base}?${params.toString()}`);
+  }, [search, searchParams, pathname, router]);
+
   const initials = (session?.user?.name || session?.user?.email || "U")
     .split(" ")
     .map((p) => p[0]?.toUpperCase() ?? "")
@@ -69,20 +88,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 p-4 lg:grid-cols-[260px_1fr]">
-        <aside className="zyoris-sidebar flex flex-col rounded-2xl p-4 shadow-lg">
+      <KeyboardShortcuts onCompose={openCompose} />
+      <div className="flex min-h-screen">
+        <aside className="zyoris-sidebar flex w-[220px] shrink-0 flex-col border-r p-3">
           <ZyorisLogo href="/app/inbox" />
-          <p className="mt-1 px-1 text-[0.65rem] uppercase tracking-[0.14em] text-[var(--muted)]">Business Email</p>
+          <button
+            type="button"
+            onClick={openCompose}
+            className="mt-4 w-full rounded-2xl bg-[var(--pastel-peach)] px-4 py-2.5 text-sm font-medium shadow-sm transition-colors hover:bg-[#f0c49a]"
+          >
+            Compose
+          </button>
 
           <NavSection title="Mail" items={mailItems} pathname={pathname} />
-          <NavSection title="Organization" items={orgItems} pathname={pathname} />
-          {(session?.user?.role === "SUPER_ADMIN" || session?.user?.role === "ORG_ADMIN") && (
+          <NavSection title="Manage" items={orgItems} pathname={pathname} />
+          {session?.user?.role === "SUPER_ADMIN" && (
             <NavSection title="Platform" items={adminItems} pathname={pathname} />
           )}
 
-          <div className="mt-auto space-y-3 border-t border-[var(--border)] pt-4">
+          <div className="mt-auto space-y-2 border-t border-[var(--border)] pt-3">
             <div className="flex items-center gap-2 px-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-indigo-500 text-xs font-semibold text-white">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--pastel-blue)] text-xs font-semibold">
                 {initials}
               </div>
               <div className="min-w-0 flex-1">
@@ -90,15 +116,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <div className="truncate text-xs text-[var(--muted)]">{session?.user?.email}</div>
               </div>
             </div>
-            <ButtonSecondary className="w-full" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-              {theme === "dark" ? "Light mode" : "Dark mode"}
+            <ButtonSecondary className="w-full text-xs" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+              {theme === "dark" ? "Light" : "Dark"}
             </ButtonSecondary>
-            <Button className="w-full" onClick={() => signOut({ callbackUrl: "/login" })}>
-              Logout
-            </Button>
+            <ButtonSecondary className="w-full text-xs" onClick={() => signOut({ callbackUrl: "/login" })}>
+              Sign out
+            </ButtonSecondary>
           </div>
         </aside>
-        <main className="zyoris-content min-h-[calc(100vh-2rem)] rounded-2xl p-1 md:p-2">{children}</main>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="flex items-center gap-3 border-b border-[var(--border)] bg-[var(--card)] px-4 py-3">
+            <div className="zyoris-search-bar flex flex-1 items-center gap-2 px-4 py-2">
+              <span className="text-[var(--muted)]">⌕</span>
+              <input
+                className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]"
+                placeholder="Search mail"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && runSearch()}
+              />
+            </div>
+          </header>
+          <main className="flex-1 overflow-auto p-4">{children}</main>
+        </div>
       </div>
     </div>
   );

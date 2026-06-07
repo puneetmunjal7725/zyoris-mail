@@ -5,6 +5,7 @@ import { signupSchema } from "@/lib/validators";
 import { sha256, randomOtpCode } from "@/lib/env";
 import { User, Organization, OTP, ActivityLog, Settings } from "@/models";
 import { sendProviderEmail } from "@/lib/services/mailer";
+import { applyPlanToOrgFields } from "@/lib/plan-limits";
 
 export async function POST(req: Request) {
   try {
@@ -25,7 +26,12 @@ export async function POST(req: Request) {
     });
 
     const slug = parsed.data.organizationName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const org = await Organization.create({ name: parsed.data.organizationName, slug, ownerId: user._id });
+    const org = await Organization.create({
+      name: parsed.data.organizationName,
+      slug,
+      ownerId: user._id,
+      ...applyPlanToOrgFields("free"),
+    });
     user.organizationId = org._id;
     await user.save();
     await Settings.create({ organizationId: org._id });

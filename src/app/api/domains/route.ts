@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { domainSchema } from "@/lib/validators";
-import { Domain, ActivityLog } from "@/models";
+import { Domain, ActivityLog, Organization } from "@/models";
+import { isWithinLimit } from "@/lib/plan-limits";
 
 export async function GET() {
   const session = await requireRole(["SUPER_ADMIN", "ORG_ADMIN", "USER"]);
@@ -18,6 +19,22 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   await connectToDatabase();
+
+  if (
+    parsed.data.organizationId !== String(session.user.organizationId) &&
+    session.user.role !== "SUPER_ADMIN"
+  ) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const org = await Organization.findById(parsed.data.organizationId).lean();
+  if (!org || org.isActive === false) return NextResponse.json({ error: "Organization not active" }, { status: 403 });
+
+  const domainCount = await Domain.countDocuments({ organizationId: parsed.data.organizationId });
+  if (!isWithinLimit(domainCount, org.domainLimit)) {
+    return NextResponse.json({ error: "Domain limit exceeded" }, { status: 403 });
+  }
+
   const token = crypto.randomBytes(12).toString("hex");
 
   const domain = await Domain.create({
