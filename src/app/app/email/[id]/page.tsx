@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
+import { formatMailDate } from "@/lib/mail-date";
 
 type EmailDoc = {
   _id: string;
@@ -118,7 +119,7 @@ export default function EmailDetailPage() {
           </div>
         </div>
         <div className="mt-2 text-sm text-[var(--muted)]">
-          From: {email.from} • To: {email.to.join(", ")} • Mailbox: {email.mailbox}
+          {email.from} · {formatMailDate(email.createdAt)} · To: {email.to.join(", ")}
         </div>
         {attachments.length > 0 && (
           <div className="mt-4 border-t border-[var(--border)] pt-4">
@@ -148,12 +149,15 @@ export default function EmailDetailPage() {
 
       {thread.length > 1 && (
         <Card>
-          <h3 className="font-semibold">Thread ({thread.length})</h3>
-          <div className="mt-3 space-y-2">
+          <h3 className="font-semibold">Conversation ({thread.length})</h3>
+          <div className="mt-3 divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
             {thread.map((m) => (
-              <div key={m._id} className="rounded-lg border border-[var(--border)] p-3 text-sm">
-                <div className="font-medium">{m.from}</div>
-                <div className="text-[var(--muted)]">{m.subject}</div>
+              <div key={m._id} className="p-4 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-medium">{m.from}</div>
+                  <div className="text-xs text-[var(--muted)]">{formatMailDate(m.createdAt)}</div>
+                </div>
+                <div className="mt-2 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: m.bodyHtml }} />
               </div>
             ))}
           </div>

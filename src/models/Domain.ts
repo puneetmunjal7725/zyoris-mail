@@ -3,7 +3,7 @@ import { Schema, model, models } from "mongoose";
 const DomainSchema = new Schema(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
-    domain: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    domain: { type: String, required: true, lowercase: true, trim: true },
     verificationToken: { type: String, required: true },
     status: { type: String, enum: ["PENDING", "VERIFIED", "FAILED"], default: "PENDING", index: true },
     catchAllEnabled: { type: Boolean, default: false, index: true },
@@ -27,6 +27,6 @@ const DomainSchema = new Schema(
   { timestamps: true }
 );
 
-DomainSchema.index({ organizationId: 1, domain: 1 });
+DomainSchema.index({ organizationId: 1, domain: 1 }, { unique: true });
 
 export const Domain = models.Domain || model("Domain", DomainSchema);

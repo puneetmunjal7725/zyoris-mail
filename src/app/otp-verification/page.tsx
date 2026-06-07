@@ -70,8 +70,10 @@ function OtpForm() {
                 body: JSON.stringify({ email, purpose, code }),
               });
               sessionStorage.removeItem("zyoris_signup_otp");
-              setSuccess("Email verified. You can sign in now.");
-              setTimeout(() => router.push("/login"), 1200);
+              sessionStorage.removeItem("zyoris_signup_otp");
+              const next = searchParams.get("next");
+              setSuccess(next === "onboarding" ? "Verified! Setting up your domain…" : "Email verified. You can sign in now.");
+              setTimeout(() => router.push(next === "onboarding" ? "/app/onboarding/domain" : "/login"), 1200);
             } catch (e) {
               setError(e instanceof Error ? e.message : "Verification failed");
             }

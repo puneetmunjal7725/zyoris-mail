@@ -6,6 +6,7 @@ import { sha256, randomOtpCode } from "@/lib/env";
 import { User, Organization, OTP, ActivityLog, Settings } from "@/models";
 import { sendProviderEmail } from "@/lib/services/mailer";
 import { applyPlanToOrgFields } from "@/lib/plan-limits";
+import { createZyorisMailbox } from "@/lib/zyoris-mailbox";
 
 export async function POST(req: Request) {
   try {
@@ -16,18 +17,21 @@ export async function POST(req: Request) {
     const exists = await User.findOne({ email: parsed.data.email.toLowerCase() });
     if (exists) return NextResponse.json({ error: "Email already exists" }, { status: 409 });
 
+    const isZyoris = parsed.data.emailType === "zyoris";
+    const orgName = parsed.data.organizationName || `${parsed.data.name}'s Mail`;
+
     const passwordHash = await bcrypt.hash(parsed.data.password, 12);
     const user = await User.create({
       name: parsed.data.name,
       email: parsed.data.email.toLowerCase(),
       passwordHash,
       role: "ORG_ADMIN",
-      isVerified: false,
+      isVerified: isZyoris,
     });
 
-    const slug = parsed.data.organizationName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const slug = orgName.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now().toString(36);
     const org = await Organization.create({
-      name: parsed.data.organizationName,
+      name: orgName,
       slug,
       ownerId: user._id,
       ...applyPlanToOrgFields("free"),
@@ -35,6 +39,31 @@ export async function POST(req: Request) {
     user.organizationId = org._id;
     await user.save();
     await Settings.create({ organizationId: org._id });
+
+    let mailboxAddress: string | undefined;
+
+    if (isZyoris && parsed.data.zyorisUsername) {
+      const mailbox = await createZyorisMailbox(org._id, parsed.data.zyorisUsername, parsed.data.name);
+      mailboxAddress = mailbox.emailAddress;
+      await ActivityLog.create({
+        organizationId: org._id,
+        userId: user._id,
+        action: "ZYORIS_MAILBOX_CREATED",
+        metadata: { emailAddress: mailboxAddress },
+      });
+
+      return NextResponse.json(
+        {
+          id: String(user._id),
+          organizationId: String(org._id),
+          emailType: "zyoris",
+          mailboxAddress,
+          readyForInbox: true,
+          message: "Your Zyoris email is ready.",
+        },
+        { status: 201 }
+      );
+    }
 
     const otpCode = randomOtpCode();
     await OTP.create({
@@ -63,12 +92,13 @@ export async function POST(req: Request) {
       {
         id: String(user._id),
         organizationId: String(org._id),
+        emailType: "custom",
         emailSent,
         requiresVerification: true,
         verificationOtp: emailSent ? undefined : otpCode,
         message: emailSent
           ? "Account created. Check your email for the verification code."
-          : "Account created. Email delivery is not configured — use the verification code shown on the next screen.",
+          : "Account created. Use the verification code on the next screen.",
       },
       { status: 201 }
     );

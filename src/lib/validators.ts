@@ -1,11 +1,22 @@
 import { z } from "zod";
 
-export const signupSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email().toLowerCase(),
-  password: z.string().min(8).max(128),
-  organizationName: z.string().min(2),
-});
+export const signupSchema = z
+  .object({
+    name: z.string().min(2),
+    email: z.string().email().toLowerCase(),
+    password: z.string().min(8).max(128),
+    organizationName: z.string().min(2).optional(),
+    emailType: z.enum(["zyoris", "custom"]).default("custom"),
+    zyorisUsername: z.string().regex(/^[a-z0-9][a-z0-9._-]{0,28}[a-z0-9]$/).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.emailType === "custom" && !data.organizationName) {
+      ctx.addIssue({ code: "custom", message: "Organization name required", path: ["organizationName"] });
+    }
+    if (data.emailType === "zyoris" && !data.zyorisUsername) {
+      ctx.addIssue({ code: "custom", message: "Username required", path: ["zyorisUsername"] });
+    }
+  });
 
 export const loginSchema = z.object({ email: z.string().email().toLowerCase(), password: z.string().min(8) });
 

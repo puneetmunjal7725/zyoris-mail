@@ -17,7 +17,17 @@ type Draft = {
   subject: string;
   html: string;
   attachments: string[];
+  showCcBcc: boolean;
 };
+
+function ComposeField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 border-b border-[var(--border)] py-1.5">
+      <span className="w-14 shrink-0 text-xs font-medium uppercase text-[var(--muted)]">{label}</span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
 
 type Props = {
   minimized: boolean;
@@ -34,6 +44,7 @@ export function ComposeWidget({ minimized, expanded, onMinimize, onExpand, onClo
   const [to, setTo] = useState("");
   const [cc, setCc] = useState("");
   const [bcc, setBcc] = useState("");
+  const [showCcBcc, setShowCcBcc] = useState(false);
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("<p></p>");
   const [attachments, setAttachments] = useState<string[]>([]);
@@ -52,13 +63,12 @@ export function ComposeWidget({ minimized, expanded, onMinimize, onExpand, onClo
           setTo(draft.to || "");
           setCc(draft.cc || "");
           setBcc(draft.bcc || "");
+          setShowCcBcc(draft.showCcBcc || false);
           setSubject(draft.subject || "");
           setHtml(draft.html || "<p></p>");
           setAttachments(draft.attachments || []);
           return;
-        } catch {
-          /* ignore */
-        }
+        } catch { /* ignore */ }
       }
       if (rows[0]) setMailbox(rows[0].emailAddress);
     });
@@ -67,14 +77,12 @@ export function ComposeWidget({ minimized, expanded, onMinimize, onExpand, onClo
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      const draft: Draft = { mailbox, to, cc, bcc, subject, html, attachments };
+      const draft: Draft = { mailbox, to, cc, bcc, subject, html, attachments, showCcBcc };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
       setSavedAt(new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }));
     }, 1500);
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-  }, [mailbox, to, cc, bcc, subject, html, attachments]);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [mailbox, to, cc, bcc, subject, html, attachments, showCcBcc]);
 
   async function uploadFile(file: File) {
     const list = mailboxes.length ? mailboxes : await clientApi<{ _id: string; emailAddress: string }[]>("/api/mailboxes");
@@ -112,68 +120,67 @@ export function ComposeWidget({ minimized, expanded, onMinimize, onExpand, onClo
   }
 
   const width = expanded ? "min(720px, calc(100vw - 2rem))" : "min(520px, calc(100vw - 2rem))";
-  const height = minimized ? "auto" : expanded ? "min(640px, calc(100vh - 4rem))" : "420px";
+  const height = minimized ? "auto" : expanded ? "min(640px, calc(100vh - 4rem))" : "460px";
 
   return (
-    <div
-      className="compose-window fixed bottom-0 right-4 z-50 flex flex-col overflow-hidden"
-      style={{ width, height: minimized ? "auto" : height }}
-    >
+    <div className="compose-window fixed bottom-0 right-4 z-50 flex flex-col overflow-hidden" style={{ width, height: minimized ? "auto" : height }}>
       <div className="compose-titlebar flex items-center justify-between px-3 py-2">
         <span className="text-sm font-medium">New message</span>
         <div className="flex items-center gap-1">
-          {savedAt && !minimized && <span className="mr-2 text-xs text-[var(--muted)]">Draft saved {savedAt}</span>}
-          <button type="button" className="rounded px-2 py-1 text-xs hover:bg-[var(--secondary)]" onClick={onMinimize} aria-label="Minimize">
-            −
-          </button>
-          <button type="button" className="rounded px-2 py-1 text-xs hover:bg-[var(--secondary)]" onClick={onExpand} aria-label="Expand">
-            ⤢
-          </button>
-          <button type="button" className="rounded px-2 py-1 text-xs hover:bg-[var(--secondary)]" onClick={onClose} aria-label="Close">
-            ×
-          </button>
+          {savedAt && !minimized && <span className="mr-2 text-xs text-[var(--muted)]">Saved {savedAt}</span>}
+          <button type="button" className="rounded px-2 py-1 text-xs hover:bg-[var(--secondary)]" onClick={onMinimize}>−</button>
+          <button type="button" className="rounded px-2 py-1 text-xs hover:bg-[var(--secondary)]" onClick={onExpand}>⤢</button>
+          <button type="button" className="rounded px-2 py-1 text-xs hover:bg-[var(--secondary)]" onClick={onClose}>×</button>
         </div>
       </div>
 
       {!minimized && (
-        <div className="flex flex-1 flex-col overflow-auto p-3">
-          <select
-            className="mb-2 h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--input)] px-2 text-sm"
-            value={mailbox}
-            onChange={(e) => setMailbox(e.target.value)}
-          >
-            {mailboxes.map((m) => (
-              <option key={m._id} value={m.emailAddress}>
-                {m.emailAddress}
-              </option>
-            ))}
-          </select>
-          <Input className="mb-2 h-9" value={to} onChange={(e) => setTo(e.target.value)} placeholder="Recipients" />
-          <Input className="mb-2 h-9" value={cc} onChange={(e) => setCc(e.target.value)} placeholder="Cc" />
-          <Input className="mb-2 h-9" value={bcc} onChange={(e) => setBcc(e.target.value)} placeholder="Bcc" />
-          <Input className="mb-2 h-9" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" />
-          <div className="min-h-[140px] flex-1 overflow-auto rounded-lg border border-[var(--border)]">
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="shrink-0 px-3 pt-2">
+            <ComposeField label="From">
+              {mailboxes.length > 1 ? (
+                <select className="h-8 w-full bg-transparent text-sm outline-none" value={mailbox} onChange={(e) => setMailbox(e.target.value)}>
+                  {mailboxes.map((m) => (
+                    <option key={m._id} value={m.emailAddress}>{m.emailAddress}</option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-sm font-medium">{mailbox || "Loading…"}</span>
+              )}
+            </ComposeField>
+            <ComposeField label="To">
+              <div className="flex items-center gap-2">
+                <input className="h-8 w-full bg-transparent text-sm outline-none" value={to} onChange={(e) => setTo(e.target.value)} placeholder="Recipients" />
+                {!showCcBcc && (
+                  <button type="button" className="text-xs text-[var(--muted)] hover:text-[var(--foreground)]" onClick={() => setShowCcBcc(true)}>Cc Bcc</button>
+                )}
+              </div>
+            </ComposeField>
+            {showCcBcc && (
+              <>
+                <ComposeField label="Cc"><input className="h-8 w-full bg-transparent text-sm outline-none" value={cc} onChange={(e) => setCc(e.target.value)} /></ComposeField>
+                <ComposeField label="Bcc"><input className="h-8 w-full bg-transparent text-sm outline-none" value={bcc} onChange={(e) => setBcc(e.target.value)} /></ComposeField>
+              </>
+            )}
+            <ComposeField label="Subject">
+              <input className="h-8 w-full bg-transparent text-sm outline-none" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" />
+            </ComposeField>
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
             <RichTextEditor value={html} onChange={setHtml} />
           </div>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <label className="cursor-pointer text-xs text-[var(--muted)]">
-              <input
-                type="file"
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) await uploadFile(file);
-                }}
-              />
-              Attach files
-            </label>
-            {attachments.length > 0 && <span className="text-xs text-[var(--muted)]">{attachments.length} attached</span>}
-          </div>
-          {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
-          <div className="mt-3 flex gap-2">
-            <Button onClick={send}>Send</Button>
+          <div className="flex items-center justify-between border-t border-[var(--border)] px-3 py-2">
+            <div className="flex items-center gap-3">
+              <Button onClick={send}>Send</Button>
+              <label className="cursor-pointer text-xs text-[var(--muted)] hover:text-[var(--foreground)]">
+                <input type="file" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (f) await uploadFile(f); }} />
+                Attach
+              </label>
+              {attachments.length > 0 && <span className="text-xs text-[var(--muted)]">{attachments.length} file(s)</span>}
+            </div>
             <ButtonSecondary onClick={onClose}>Discard</ButtonSecondary>
           </div>
+          {error && <p className="px-3 pb-2 text-xs text-red-700">{error}</p>}
         </div>
       )}
     </div>
