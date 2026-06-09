@@ -13,6 +13,7 @@ vi.mock("../../src/lib/db", () => ({
 const mocks = vi.hoisted(() => {
   const Mailbox = {
     find: vi.fn(() => ({ sort: vi.fn(() => ({ lean: vi.fn(async () => [{ _id: "m1", emailAddress: "a@example.com" }]) })) })),
+    findOne: vi.fn(() => ({ lean: vi.fn(async () => null) })),
     countDocuments: vi.fn(async () => 0),
     create: vi.fn(async (doc: any) => ({ _id: "m2", ...doc })),
   };

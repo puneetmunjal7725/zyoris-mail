@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SettingsShell } from "@/components/layout/settings-shell";
 import { clientApi } from "@/lib/client-api";
+import { useToast } from "@/components/ui/toast-provider";
 
 export default function AdvancedDnsPage() {
-  const { data: session } = useSession();
+  const { toast } = useToast();
   const [domains, setDomains] = useState<any[]>([]);
   const [mailboxes, setMailboxes] = useState<any[]>([]);
   const [catchAllMailboxId, setCatchAllMailboxId] = useState<Record<string, string>>({});
@@ -56,8 +56,13 @@ export default function AdvancedDnsPage() {
               <Button
                 className="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]"
                 onClick={async () => {
-                  await clientApi(`/api/domains/${String(d._id)}/verify`, { method: "POST" });
-                  await refresh();
+                  try {
+                    const updated = await clientApi<any>(`/api/domains/${String(d._id)}/verify`, { method: "POST" });
+                    await refresh();
+                    toast(updated.status === "VERIFIED" ? "Domain verified" : "DNS check complete — see record status below", updated.status === "VERIFIED" ? "success" : "info");
+                  } catch (e) {
+                    toast(e instanceof Error ? e.message : "DNS check failed", "error");
+                  }
                 }}
               >
                 Check DNS

@@ -11,4 +11,10 @@ describe("validators", () => {
     const parsed = domainSchema.safeParse({ organizationId: "abc", domain: "not a domain" });
     expect(parsed.success).toBe(false);
   });
+
+  it("normalizes domain input", () => {
+    const parsed = domainSchema.safeParse({ organizationId: "abc", domain: " HTTPS://Acme.COM/ " });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.domain).toBe("acme.com");
+  });
 });

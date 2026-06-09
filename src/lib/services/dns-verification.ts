@@ -32,6 +32,6 @@ export async function verifyDomainDns(domain: string, token: string): Promise<Dn
     isVerified: false,
   };
 
-  result.isVerified = result.txt.ok && result.spf.ok && result.dkim.ok && result.dmarc.ok && result.mx.ok;
+  result.isVerified = result.txt.ok;
   return result;
 }

@@ -1,68 +1,141 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { clientApi } from "@/lib/client-api";
+import { useToast } from "@/components/ui/toast-provider";
 
 export default function DomainOnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
   const [domains, setDomains] = useState<any[]>([]);
+  const [active, setActive] = useState<any | null>(null);
   const [step, setStep] = useState(1);
+  const [verifying, setVerifying] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    clientApi<any[]>("/api/domains")
-      .then((rows) => setDomains(rows.filter((d) => d.domain !== "zyoris.com")))
-      .catch(() => setDomains([]));
-  }, []);
+    (async () => {
+      setLoading(true);
+      try {
+        const rows = await clientApi<any[]>("/api/domains");
+        const custom = rows.filter((d) => d.domain !== "zyoris.com");
+        setDomains(custom);
+        const domainId = searchParams.get("domainId");
+        const picked = domainId ? custom.find((d) => String(d._id) === domainId) : custom.find((d) => d.status !== "VERIFIED");
+        setActive(picked || null);
+        if (picked?.status === "VERIFIED") setStep(4);
+        else if (picked) setStep(2);
+      } catch (e) {
+        toast(e instanceof Error ? e.message : "Failed to load domains", "error");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [searchParams, toast]);
 
-  const pending = domains.find((d) => d.status !== "VERIFIED");
+  async function verifyNow() {
+    if (!active) return;
+    setVerifying(true);
+    try {
+      const updated = await clientApi<any>(`/api/domains/${String(active._id)}/verify`, { method: "POST" });
+      setActive(updated);
+      if (updated.status === "VERIFIED") {
+        toast("Domain verified successfully", "success");
+        setStep(4);
+      } else {
+        toast("Verification record not found yet. DNS can take up to 48 hours.", "error");
+        setStep(3);
+      }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Verification check failed", "error");
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <Card className="mt-6 p-6 text-sm text-[var(--muted)]">Loading domain setup…</Card>
+      </div>
+    );
+  }
+
+  if (!active) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <h1 className="text-2xl font-semibold">Set up your domain</h1>
+        <Card className="mt-6 space-y-4">
+          <p className="text-sm text-[var(--muted)]">No custom domain found. Add one in Settings → Domains first.</p>
+          <Button onClick={() => router.push("/app/settings/domains")}>Go to Domains</Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const instructions = active.verificationInstructions;
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-semibold">Set up your domain</h1>
-      <p className="mt-2 text-sm text-[var(--muted)]">A short guided setup — technical details are in Settings when you need them.</p>
+      <h1 className="text-2xl font-semibold">Set up {active.domain}</h1>
+      <p className="mt-2 text-sm text-[var(--muted)]">Add the DNS record below, then verify ownership.</p>
 
-      <Card className="mt-6">
-        {step === 1 && (
-          <div className="space-y-4">
-            <h2 className="font-medium">Step 1 — Add your domain</h2>
-            <p className="text-sm text-[var(--muted)]">
-              {pending ? `We're setting up ${pending.domain}.` : "Add a domain in Settings → Domains if you haven't yet."}
+      <Card className="mt-6 space-y-4">
+        {step === 2 && (
+          <>
+            <h2 className="font-medium">Step 1 — Add verification record</h2>
+            <p className="text-sm text-[var(--muted)]">At your domain registrar, add this TXT record on the root domain:</p>
+            <div className="rounded-lg bg-[var(--secondary)] p-3 font-mono text-xs">
+              <div>Host: @</div>
+              <div>Value: zyoris-verification={active.verificationToken}</div>
+            </div>
+            {instructions?.txt && (
+              <div className="rounded-lg bg-[var(--secondary)] p-3 font-mono text-xs">
+                <div>Host: {instructions.txt.host}</div>
+                <div>Value: {instructions.txt.value}</div>
+              </div>
+            )}
+            <p className="text-xs text-[var(--muted)]">
+              Full SPF, DKIM, DMARC, and MX records are in{" "}
+              <Link href="/app/settings/domains/advanced" className="zyoris-link">
+                Advanced DNS
+              </Link>
+              .
             </p>
-            <Button onClick={() => setStep(2)} disabled={!pending}>
-              Continue
-            </Button>
-          </div>
-        )}
-
-        {step === 2 && pending && (
-          <div className="space-y-4">
-            <h2 className="font-medium">Step 2 — Verify ownership</h2>
-            <p className="text-sm text-[var(--muted)]">
-              Ask your IT admin to add a verification record, or open Advanced DNS in Settings for exact values.
-            </p>
-            <Button
-              onClick={async () => {
-                await clientApi(`/api/domains/${String(pending._id)}/verify`, { method: "POST" });
-                const refreshed = await clientApi<any[]>("/api/domains");
-                const updated = refreshed.find((d) => String(d._id) === String(pending._id));
-                if (updated?.status === "VERIFIED") router.push("/app/inbox");
-                else setStep(3);
-              }}
-            >
-              I've added the record — check now
-            </Button>
-          </div>
+            <Button onClick={() => setStep(3)}>I've added the record</Button>
+          </>
         )}
 
         {step === 3 && (
-          <div className="space-y-4">
-            <h2 className="font-medium">Almost there</h2>
-            <p className="text-sm text-[var(--muted)]">DNS can take up to 48 hours. You can use your inbox now and finish setup later in Settings.</p>
-            <Button onClick={() => router.push("/app/inbox")}>Go to inbox</Button>
-          </div>
+          <>
+            <h2 className="font-medium">Step 2 — Verify ownership</h2>
+            <p className="text-sm text-[var(--muted)]">We'll check for your TXT verification record.</p>
+            {active.diagnostics?.txt && (
+              <p className="text-xs text-[var(--muted)]">Last check: {active.diagnostics.txt}</p>
+            )}
+            <Button onClick={verifyNow} disabled={verifying}>
+              {verifying ? "Checking…" : "Check verification now"}
+            </Button>
+            <Button className="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]" onClick={() => router.push("/app/inbox")}>
+              Skip for now — go to inbox
+            </Button>
+          </>
+        )}
+
+        {step === 4 && (
+          <>
+            <h2 className="font-medium">Domain verified</h2>
+            <p className="text-sm text-[var(--muted)]">{active.domain} is ready. Create team emails in Settings → Team emails.</p>
+            <Button onClick={() => router.push("/app/settings/team/create")}>Add team email</Button>
+            <Button className="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]" onClick={() => router.push("/app/inbox")}>
+              Go to inbox
+            </Button>
+          </>
         )}
       </Card>
     </div>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { domainValidationMessage, normalizeDomain } from "@/lib/domain-utils";
 
 export const signupSchema = z
   .object({
@@ -35,7 +36,13 @@ export const orgSchema = z.object({ name: z.string().min(2), userLimit: z.number
 export const inviteSchema = z.object({ organizationId: z.string(), email: z.string().email().toLowerCase(), role: z.enum(["ORG_ADMIN", "USER"]) });
 export const acceptInviteSchema = z.object({ token: z.string().min(32), name: z.string().min(2), password: z.string().min(8) });
 
-export const domainSchema = z.object({ organizationId: z.string(), domain: z.string().min(3).regex(/^[a-zA-Z0-9.-]+$/) });
+export const domainSchema = z.object({
+  organizationId: z.string().min(1),
+  domain: z.string().transform(normalizeDomain).superRefine((d, ctx) => {
+    const msg = domainValidationMessage(d);
+    if (msg) ctx.addIssue({ code: "custom", message: msg });
+  }),
+});
 
 export const mailboxCreateSchema = z.object({
   domainId: z.string().min(1),

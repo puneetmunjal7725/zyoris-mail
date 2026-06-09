@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button, ButtonSecondary } from "@/components/ui/button";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { clientApi } from "@/lib/client-api";
+import { useToast } from "@/components/ui/toast-provider";
 
 const DRAFT_KEY = "zyoris_compose_draft";
 
@@ -39,7 +40,8 @@ type Props = {
 
 export function ComposeWidget({ minimized, expanded, onMinimize, onExpand, onClose }: Props) {
   const router = useRouter();
-  const [mailboxes, setMailboxes] = useState<{ _id: string; emailAddress: string }[]>([]);
+  const { toast } = useToast();
+  const [mailboxes, setMailboxes] = useState<{ _id: string; emailAddress: string; displayName?: string }[]>([]);
   const [mailbox, setMailbox] = useState("");
   const [to, setTo] = useState("");
   const [cc, setCc] = useState("");
@@ -49,6 +51,7 @@ export function ComposeWidget({ minimized, expanded, onMinimize, onExpand, onClo
   const [html, setHtml] = useState("<p></p>");
   const [attachments, setAttachments] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -96,12 +99,26 @@ export function ComposeWidget({ minimized, expanded, onMinimize, onExpand, onClo
   }
 
   async function send() {
+    if (!mailbox) {
+      toast("Select a sender mailbox first", "error");
+      return;
+    }
+    if (!to.trim()) {
+      toast("Add at least one recipient", "error");
+      return;
+    }
+    if (!subject.trim()) {
+      toast("Add a subject", "error");
+      return;
+    }
     setError(null);
+    setSending(true);
     try {
       await clientApi("/api/emails/send", {
         method: "POST",
         body: JSON.stringify({
           mailbox,
+          from: mailbox,
           to: to.split(",").map((x) => x.trim()).filter(Boolean),
           cc: cc ? cc.split(",").map((x) => x.trim()).filter(Boolean) : undefined,
           bcc: bcc ? bcc.split(",").map((x) => x.trim()).filter(Boolean) : undefined,
@@ -112,10 +129,15 @@ export function ComposeWidget({ minimized, expanded, onMinimize, onExpand, onClo
         }),
       });
       localStorage.removeItem(DRAFT_KEY);
+      toast("Email sent", "success");
       onClose();
       router.push("/app/sent");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Send failed");
+      const msg = e instanceof Error ? e.message : "Send failed";
+      setError(msg);
+      toast(msg, "error");
+    } finally {
+      setSending(false);
     }
   }
 
@@ -138,14 +160,16 @@ export function ComposeWidget({ minimized, expanded, onMinimize, onExpand, onClo
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="shrink-0 px-3 pt-2">
             <ComposeField label="From">
-              {mailboxes.length > 1 ? (
-                <select className="h-8 w-full bg-transparent text-sm outline-none" value={mailbox} onChange={(e) => setMailbox(e.target.value)}>
+              {mailboxes.length === 0 ? (
+                <span className="text-sm text-[var(--muted)]">No mailbox — add one in Settings → Team emails</span>
+              ) : (
+                <select className="h-8 w-full bg-transparent text-sm font-medium outline-none" value={mailbox} onChange={(e) => setMailbox(e.target.value)}>
                   {mailboxes.map((m) => (
-                    <option key={m._id} value={m.emailAddress}>{m.emailAddress}</option>
+                    <option key={m._id} value={m.emailAddress}>
+                      {m.displayName ? `${m.displayName} <${m.emailAddress}>` : m.emailAddress}
+                    </option>
                   ))}
                 </select>
-              ) : (
-                <span className="text-sm font-medium">{mailbox || "Loading…"}</span>
               )}
             </ComposeField>
             <ComposeField label="To">
@@ -171,7 +195,7 @@ export function ComposeWidget({ minimized, expanded, onMinimize, onExpand, onClo
           </div>
           <div className="flex items-center justify-between border-t border-[var(--border)] px-3 py-2">
             <div className="flex items-center gap-3">
-              <Button onClick={send}>Send</Button>
+              <Button onClick={send} disabled={sending || !mailbox}>{sending ? "Sending…" : "Send"}</Button>
               <label className="cursor-pointer text-xs text-[var(--muted)] hover:text-[var(--foreground)]">
                 <input type="file" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (f) await uploadFile(f); }} />
                 Attach

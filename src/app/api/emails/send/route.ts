@@ -39,10 +39,13 @@ export async function POST(req: Request) {
     threadId = thread._id;
   }
 
+  const fromAddress = parsed.data.from || mailbox.emailAddress;
+  const fromHeader = mailbox.displayName ? `${mailbox.displayName} <${mailbox.emailAddress}>` : mailbox.emailAddress;
+
   const email = await Email.create({
     organizationId: session.user.organizationId,
     mailbox: parsed.data.mailbox,
-    from: parsed.data.from || session.user.email,
+    from: fromAddress,
     to: parsed.data.to,
     cc: parsed.data.cc || [],
     bcc: parsed.data.bcc || [],
@@ -70,17 +73,23 @@ export async function POST(req: Request) {
     });
     await getMailQueue().add("send-scheduled-email", { scheduledEmailId: String(scheduled._id) }, { delay: Math.max(0, new Date(parsed.data.sendAt).getTime() - Date.now()) });
   } else {
-    const providerMessageId = await sendProviderEmail({
-      from: parsed.data.from || session.user.email,
-      to: parsed.data.to,
-      cc: parsed.data.cc,
-      bcc: parsed.data.bcc,
-      subject: parsed.data.subject,
-      html: parsed.data.bodyHtml,
-      text: parsed.data.bodyText,
-    });
-    email.providerMessageId = providerMessageId;
-    await email.save();
+    try {
+      const providerMessageId = await sendProviderEmail({
+        from: fromHeader,
+        to: parsed.data.to,
+        cc: parsed.data.cc,
+        bcc: parsed.data.bcc,
+        subject: parsed.data.subject,
+        html: parsed.data.bodyHtml,
+        text: parsed.data.bodyText,
+      });
+      email.providerMessageId = providerMessageId;
+      await email.save();
+    } catch (e) {
+      await Email.deleteOne({ _id: email._id });
+      const message = e instanceof Error ? e.message : "Failed to send email";
+      return NextResponse.json({ error: message.includes("RESEND") ? "Email delivery failed. Check RESEND_API_KEY and domain verification." : message }, { status: 502 });
+    }
   }
 
   await Mailbox.updateOne(
